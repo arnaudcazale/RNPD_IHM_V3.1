@@ -147,6 +147,8 @@ private:
     void computeSize();
     void pronationGet();
     QVector <QRect> findZones(QVector <QVector <double> > *matrix);
+    QVector <long> gravityGet(QVector <QVector <double> > *matrix, QVector <QRect> zones);
+    double gravityCompute(QVector <long> sumLeft, QVector <long> sumRight);
     QPoint barycentreGet(QVector <QVector <double> > *matrix, QVector <QRect> zones);
     QLine neutralLineGet(QVector <QVector <double> > *matrix, QVector <QRect> zones);
     double deviationGet(QLine neutralLine, QPoint barycentrePoint, bool isLeft);

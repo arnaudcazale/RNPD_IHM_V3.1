@@ -313,6 +313,62 @@ void MainWindow::pronationGet(){
     emit(dataReady_zone(zonesLeft, zonesRight));
     emit(dataReady_point(barycentreLeft, barycentreRight));
     emit(dataReady_line(neutralLineLeft, neutralLineRight));
+
+    //Drop computing
+    //Compute drop (poids relatif de la zone supérieure et inférieure
+    QVector <long> sumLeft = gravityGet(&m_data_filter_left, zonesLeft);
+    QVector <long> sumRight = gravityGet(&m_data_filter_right, zonesRight);
+    double gravity = gravityCompute(sumLeft, sumRight);
+}
+
+ double MainWindow::gravityCompute(QVector <long> sumLeft, QVector <long> sumRight)
+ {
+     qDebug() << "**************************gravityCompute*******************************";
+     double gravity = 0;
+     if( (sumLeft.size() == 2) && (sumRight.size() == 2))
+     {
+         long totalSum = sumLeft.at(0) + sumLeft.at(1) + sumRight.at(0) + sumRight.at(0);
+         qDebug() << "totalSum = " << totalSum;
+         double gravity = (double)(sumLeft.at(1) + sumRight.at(1)) / (double)totalSum;
+         qDebug() << "gravity = " << gravity;
+         double alpha = 2.0 / 3.0;
+         double igravity = 0;
+         if( gravity >= alpha)
+             igravity = 0;
+         else
+             igravity = (uint8_t)(((alpha - gravity) / alpha) * 17);
+         qDebug() << "igravity = " << igravity;
+     }else
+     {
+         qDebug() << "igravity non disponible";
+     }
+
+     return gravity;
+ }
+
+QVector <long> MainWindow::gravityGet(QVector <QVector <double> > *matrix, QVector <QRect> zones)
+{
+    qDebug() << "**************************dropGet*******************************";
+    int medianRow = 0;
+    QVector <long> sum (0,0);
+    //Si 2 zones
+    if(zones.size() > 1)
+    {
+        medianRow = zones.at(0).top() + ( (zones.at(1).top() - zones.at(1).height() + 1) - zones.at(0).top() ) / 2;
+        qDebug() << "medianRow" << medianRow;
+        long lowerSum = sumMatrix(&m_data_filter_left, 0, medianRow);
+        long upperSum = sumMatrix(&m_data_filter_left, medianRow, LGN_NBR);
+        sum.append(lowerSum);
+        sum.append(upperSum);
+        qDebug() << "upperSum" << upperSum;
+        qDebug() << "lowerSum" << lowerSum;
+
+    }else
+    {
+        qDebug() << "Drop indisponible";
+    }
+
+    return sum;
 }
 
 QPoint MainWindow::barycentreGet(QVector <QVector <double> > *matrix, QVector <QRect> zones)
