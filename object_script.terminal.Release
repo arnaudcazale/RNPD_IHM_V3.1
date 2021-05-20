@@ -1,0 +1,13 @@
+release/displaywindow.o
+release/main.o
+release/mainwindow.o
+release/plot.o
+release/popupwindow.o
+release/settingsdialog.o
+release/console.o
+release/qrc_terminal.o
+release/moc_mainwindow.o
+release/moc_plot.o
+release/moc_popupwindow.o
+release/moc_settingsdialog.o
+release/moc_console.o
