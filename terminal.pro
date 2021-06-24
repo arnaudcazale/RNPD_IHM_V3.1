@@ -1,7 +1,9 @@
 QT += \
     widgets \
     serialport \
-    printsupport
+    printsupport \
+    multimedia \
+    multimediawidgets
 
 CONFIG += qwt
 
@@ -16,6 +18,7 @@ SOURCES += \
     mainwindow.cpp \
     plot.cpp \
     popupwindow.cpp \
+    sequencer.cpp \
     settingsdialog.cpp \
     console.cpp
 
@@ -24,6 +27,7 @@ HEADERS += \
     mainwindow.h \
     plot.h \
     popupwindow.h \
+    sequencer.h \
     settingsdialog.h \
     console.h
 

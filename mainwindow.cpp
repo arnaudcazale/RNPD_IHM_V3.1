@@ -55,6 +55,7 @@
 #include "settingsdialog.h"
 #include "popupwindow.h"
 #include "displaywindow.h"
+#include "sequencer.h"
 
 #include <QLabel>
 #include <QMessageBox>
@@ -80,7 +81,10 @@ MainWindow::MainWindow(QWidget *parent) :
     m_display_gravity(new DisplayWindow),
 //! [1]
     m_serial(new QSerialPort(this)),
-    m_data(new QVector<quint8>)
+    m_data(new QVector<quint8>),
+    m_sequencer(new Sequencer),
+    m_player(new QMediaPlayer)
+
 //! [1]
 {
 //! [0]
@@ -92,17 +96,18 @@ MainWindow::MainWindow(QWidget *parent) :
     for(int i = 0; i < LGN_NBR; i++) //of course you might not want to init the vectors in a loop - this is just an example
     {
         QVector<double> foo; //create a QVector of doubles
-        /*for(int j = 0; j < COL_NBR; j++)
+        for(int j = 0; j < COL_NBR; j++)
         {
             foo.append(0);
-        }*/
+        }
         m_data_left.append(foo);
         m_data_right.append(foo);
         m_data_bin_left.append(foo);
         m_data_bin_right.append(foo);
         m_data_filter_left.append(foo);
         m_data_filter_right.append(foo);
-
+        m_data_left_mean.append(foo);
+        m_data_right_mean.append(foo);
     }
 
     m_ui->setupUi(this);
@@ -140,19 +145,28 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(m_serial, &QSerialPort::readyRead, this, &MainWindow::readData);
 //! [2]
     connect(m_console, &Console::getData, this, &MainWindow::writeData);
+    //connect(m_sequencer, &Sequencer::getData, this, &MainWindow::writeData);
 
 //! [3]
     connect(this, SIGNAL(dataReady_left(QVector<QVector <double> > *)), m_popupwindow, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
     connect(this, SIGNAL(dataReady_right(QVector<QVector <double> > *)), m_popupwindow, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
-    connect(this, SIGNAL(dataReady_line(QVector <QLine>)), m_popupwindow, SLOT(drawLine(QVector <QLine>)));
+    //connect(this, SIGNAL(dataReady_line(QVector <QLine>)), m_popupwindow, SLOT(drawLine(QVector <QLine>)));
     connect(this, SIGNAL(dataReadyGravity_left(QVector<QVector <double> > *)), m_popupwindowGravity, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
     connect(this, SIGNAL(dataReadyGravity_right(QVector<QVector <double> > *)), m_popupwindowGravity, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
-    connect(this, SIGNAL(dataReadyGravity_line(QVector <QLine>)), m_popupwindowGravity, SLOT(drawLine(QVector <QLine>)));
+    //connect(this, SIGNAL(dataReadyGravity_line(QVector <QLine>)), m_popupwindowGravity, SLOT(drawLine(QVector <QLine>)));
     connect(this, SIGNAL(dataReady_point(QPoint, QPoint)), m_popupwindowGravity, SLOT(drawPoint(QPoint, QPoint)));
     connect(this, SIGNAL(dataReady_zone(QVector <QRect>, QVector <QRect>)), m_popupwindowGravity, SLOT(drawZone(QVector <QRect>, QVector <QRect>)));
     connect(this, SIGNAL(dataReady_line(QLine, QLine)), m_popupwindowGravity, SLOT(drawLine(QLine, QLine)));
+    connect(m_sequencer, SIGNAL(getData(const QByteArray)), this, SLOT(writeData(const QByteArray)));
 
     openSerialPort();
+
+    m_player->setMedia(QUrl("file:///C:/Users/arnau/Desktop/SMARTRONICS/RUNPAD/V3/IHM/V3.1/invitation.mp4"));
+    QVideoWidget *videoWidget = new QVideoWidget;
+    m_player->setVideoOutput(videoWidget);
+    videoWidget->resize(900, 800);
+    videoWidget->show();
+    m_player->play();
 }
 //! [3]
 
@@ -219,6 +233,7 @@ void MainWindow::about()
 //! [6]
 void MainWindow::writeData(const QByteArray &data)
 {
+    qDebug() << data;
     m_serial->write(data);
 }
 //! [6]
@@ -233,21 +248,27 @@ void MainWindow::readData()
          {
              QByteArray data = m_serial->read(1);
              m_data->append(static_cast<quint8>(data[0]));
-             if(m_data->size() >= 768)//1536
+             if(m_data->size() >= 1536)//768
              {
                  filling = false;
+                 //Detection if someone is present on the runpad
+                 if(int mean = getRNPDMean(m_data, m_data->size()) > 10 )
+                 {
+                    //m_presence = true;
+                    if(m_player->state() == QMediaPlayer::PlayingState){
+                        m_player->stop();
+                    }
+                    qDebug() << m_presence;
+                    getMeasure();
+                 }else
+                 {
+                    //m_presence = false;
+                    if(m_player->state() == QMediaPlayer::StoppedState){
+                        m_player->play();
+                    }
+                 }
 
-                 //split data & fill with 0 and do mean;
-                 //splitData();
-                 splitDataFillZero();
-                 fillLeftDataMeanNeightboorhood();
-                 fillRightDataMeanNeightboorhood();
-
-                 //Show spectrogramms
-                 emit dataReady_left(&m_data_left);
-                 emit dataReady_right(&m_data_right);
-
-                 pronationGet();
+                 m_data->clear();
              }
          }else
          {
@@ -272,17 +293,87 @@ void MainWindow::readData()
      }
 }
 
+void MainWindow::getMeasure()
+{
+    //split data & fill with 0 and do mean;
+    //splitData();
+    splitDataFillZero();
+    fillLeftDataMeanNeightboorhood();
+    fillRightDataMeanNeightboorhood();
+
+    //Show spectrogramms (debug purpose)
+    emit dataReady_left(&m_data_left);
+    emit dataReady_right(&m_data_right);
+
+    m_count_measure++;
+    accumulate(&m_data_left, &m_data_right);
+    //qDebug() << m_data_left_mean;
+
+    if(m_count_measure == 5)
+    {
+        accumulateDoMean(m_count_measure);
+        pronationGet();
+        resetAccumulateVector();
+        m_count_measure = 0;
+    }
+}
+
+void MainWindow::accumulateDoMean(int nbr)
+{
+    for( int i = 0; i < LGN_NBR; i++)
+    {
+        for( int j = 0; j < COL_NBR; j++)
+        {
+           m_data_left_mean[i][j]  /= nbr;
+           m_data_right_mean[i][j] /= nbr;
+        }
+    }
+}
+
+void MainWindow::accumulate(QVector <QVector <double> > *matrix_left, QVector <QVector <double> > *matrix_right)
+{
+    for( int i = 0; i < LGN_NBR; i++)
+    {
+        for( int j = 0; j < COL_NBR; j++)
+        {
+           m_data_left_mean[i][j]  += matrix_left->at(i).at(j);
+           m_data_right_mean[i][j] += matrix_right->at(i).at(j);
+        }
+    }
+}
+
+void MainWindow::resetAccumulateVector()
+{
+    for( int i = 0; i < LGN_NBR; i++)
+    {
+        for( int j = 0; j < COL_NBR; j++)
+        {
+           m_data_left_mean[i][j]  = 0;
+           m_data_right_mean[i][j] = 0;
+        }
+    }
+}
+
+int MainWindow::getRNPDMean(QVector <unsigned char> *data, int size){
+    int mean = 0;
+    for(int i=0; i<size; i++)
+    {
+        mean += data->at(i);
+    }
+    return mean/size;
+}
+
 void MainWindow::pronationGet(){
 
     //Binarize matrix
-    binarizeFromMean(&m_data_left, &m_data_bin_left);
-    binarizeFromMean(&m_data_right, &m_data_bin_right);
+    binarizeFromMean(&m_data_left_mean, &m_data_bin_left);
+    binarizeFromMean(&m_data_right_mean, &m_data_bin_right);
     //binarizeFromNoiseMargin(&m_data_left, &m_data_bin_left);
     //binarizeFromNoiseMargin(&m_data_right, &m_data_bin_right);
 
     //Filter matrix
-    filterMatrix(&m_data_left, &m_data_bin_left, &m_data_filter_left);
-    filterMatrix(&m_data_right, &m_data_bin_right, &m_data_filter_right);
+    filterMatrix(&m_data_left_mean, &m_data_bin_left, &m_data_filter_left);
+    filterMatrix(&m_data_right_mean, &m_data_bin_right, &m_data_filter_right);
 
     //Display graph
     emit dataReadyGravity_left(&m_data_filter_left);
@@ -626,9 +717,6 @@ void MainWindow::splitDataFillZero()
         //qDebug()<< "right["<< i << "] = " << right.at(i);
     }
 
-    m_data->clear();
-
-
     //Reverse order
     for(int i=left.size()-1; i>=0;i--){
       m_data_left.append(left.at(i));
@@ -640,6 +728,7 @@ void MainWindow::splitDataFillZero()
     }
 
 }
+
 //! [7]
 void MainWindow::fillLeftDataMeanNeightboorhood()
 {
@@ -682,21 +771,21 @@ void MainWindow::fillLeftDataMeanNeightboorhood()
         {
             for(int j = 1; j < COL_NBR; j = j+2)
             {
-                if( (i == 47) && (j == 15) )
+                if( (i == LGN_NBR-1) && (j == COL_NBR-1) )
                 {
                     mean_data = ( m_data_left.at(i).at(j-1) + m_data_left.at(i-1).at(j) ) / 2;
                     m_data_left[i].replace(j, mean_data);
-                }else if( (i == 47) && (j != 15) )
+                }else if( (i == LGN_NBR-1) && (j != COL_NBR-1) )
                 {
                     mean_data = ( m_data_left.at(i).at(j-1) + m_data_left.at(i-1).at(j) + m_data_left.at(i).at(j+1) ) / 3;
                     m_data_left[i].replace(j, mean_data);
 
                 //Sinon Si dernière colonne
-                }else if( (i != 47) && (j == 15) )
+                }else if( (i != LGN_NBR-1) && (j == COL_NBR-1) )
                 {
                     mean_data = ( m_data_left.at(i+1).at(j) + m_data_left.at(i).at(j-1) + m_data_left.at(i-1).at(j) ) / 3;
                     m_data_left[i].replace(j, mean_data);
-                }else if( (i != 47) && (j != 15) )
+                }else if( (i != LGN_NBR-1) && (j != COL_NBR-1) )
                 {
                     mean_data = ( m_data_left.at(i).at(j-1) + m_data_left.at(i+1).at(j) + m_data_left.at(i-1).at(j) + m_data_left.at(i).at(j+1) ) / 4;
                     m_data_left[i].replace(j, mean_data);
@@ -722,21 +811,21 @@ void MainWindow::fillRightDataMeanNeightboorhood()
             {
                 //qDebug() << "j"<< j;
                 //Si 1ere ligne et 1ere colonne
-                if( (i == 0) && (j == 15) )
+                if( (i == 0) && (j == COL_NBR-1) )
                 {
                     mean_data = ( m_data_right.at(i+1).at(j) + m_data_right.at(i).at(j-1) ) / 2;
                     m_data_right[i].replace(j, mean_data);
-                }else if( (i == 0) && (j != 15) )
+                }else if( (i == 0) && (j != COL_NBR-1) )
                 {
                     mean_data = ( m_data_right.at(i).at(j-1) + m_data_right.at(i+1).at(j) + m_data_right.at(i).at(j+1) ) / 3;
                     m_data_right[i].replace(j, mean_data);
 
                 //Sinon Si 1ere colonne
-                }else if( (i != 0) && (j == 15) )
+                }else if( (i != 0) && (j == COL_NBR-1) )
                 {
                     mean_data = ( m_data_right.at(i+1).at(j) + m_data_right.at(i-1).at(j) + m_data_right.at(i).at(j-1) ) / 3;
                     m_data_right[i].replace(j, mean_data);
-                }else if( (i != 0) && (j != 15) )
+                }else if( (i != 0) && (j != COL_NBR-1) )
                 {
                     mean_data = ( m_data_right.at(i).at(j-1) + m_data_right.at(i+1).at(j) + m_data_right.at(i-1).at(j) + m_data_right.at(i).at(j+1) ) / 4;
                     m_data_right[i].replace(j, mean_data);
@@ -749,21 +838,21 @@ void MainWindow::fillRightDataMeanNeightboorhood()
         {
             for(int j = 0; j < COL_NBR; j = j+2)
             {
-                if( (i == 47) && (j == 0) )
+                if( (i == LGN_NBR-1) && (j == 0) )
                 {
                     mean_data = ( m_data_right.at(i).at(j+1) + m_data_right.at(i-1).at(j) ) / 2;
                     m_data_right[i].replace(j, mean_data);
-                }else if( (i == 47) && (j != 0) )
+                }else if( (i == LGN_NBR-1) && (j != 0) )
                 {
                     mean_data = ( m_data_right.at(i).at(j-1) + m_data_right.at(i-1).at(j) + m_data_right.at(i).at(j+1) ) / 3;
                     m_data_right[i].replace(j, mean_data);
 
                 //Sinon Si dernière colonne
-                }else if( (i != 47) && (j == 0) )
+                }else if( (i != LGN_NBR-1) && (j == 0) )
                 {
                     mean_data = ( m_data_right.at(i+1).at(j) + m_data_right.at(i).at(j+1) + m_data_right.at(i-1).at(j) ) / 3;
                     m_data_right[i].replace(j, mean_data);
-                }else if( (i != 47) && (j != 0) )
+                }else if( (i != LGN_NBR-1) && (j != 0) )
                 {
                     mean_data = ( m_data_right.at(i).at(j-1) + m_data_right.at(i+1).at(j) + m_data_right.at(i-1).at(j) + m_data_right.at(i).at(j+1) ) / 4;
                     m_data_right[i].replace(j, mean_data);

@@ -102,14 +102,15 @@ class SpectrogramData: public QwtMatrixRasterData
 public:
     SpectrogramData()
     {
-        double matrix[384];
+        int sizeMatrix = LGN_NBR*(COL_NBR/2);
+        double matrix[sizeMatrix]; //384
 
         setInterval( Qt::XAxis, QwtInterval( 0, COL_NBR) );
         setInterval( Qt::YAxis, QwtInterval( 0, LGN_NBR) );
         setInterval( Qt::ZAxis, QwtInterval( 0, 254 ) );
 
-        for(int i = 0 ; i < 384 ; i++){
-            matrix[i] = (double) ((double)254/384) * i;
+        for(int i = 0 ; i < sizeMatrix ; i++){
+            matrix[i] = (double) ((double)254/sizeMatrix) * i;
         }
 
         QVector<double> values;
@@ -144,7 +145,7 @@ public:
     }
 
 private:
-    const int LGN_NBR = 48;
+    const int LGN_NBR = 96;
     const int COL_NBR = 16;
 
 };

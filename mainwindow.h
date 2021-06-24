@@ -55,6 +55,9 @@
 #include <QMainWindow>
 #include <QSerialPort>
 #include <QSerialPort>
+#include <QMediaPlayer>
+#include <QMediaPlaylist>
+#include <QVideoWidget>
 
 QT_BEGIN_NAMESPACE
 
@@ -70,6 +73,7 @@ class Console;
 class SettingsDialog;
 class PopupWindow;
 class DisplayWindow;
+class Sequencer;
 
 class MainWindow : public QMainWindow
 {
@@ -157,7 +161,11 @@ private:
     QVector<int> getRowSum(int startLine, int endLine, QVector <QVector <double> > *matrix);
     int getLargestRowIdx(int startLine, int endLine, QVector<int> *rowSum, bool isUp);
     double getCenterColIdx(int largestRowIdx, QVector <QVector <double> > *matrix);
-
+    int getRNPDMean(QVector <unsigned char> *, int);
+    void getMeasure(void);
+    void accumulate(QVector <QVector <double> > *, QVector <QVector <double> > *);
+    void accumulateDoMean(int);
+    void resetAccumulateVector();
 
 private:
     void showStatusMessage(const QString &message);
@@ -173,12 +181,17 @@ private:
     DisplayWindow *m_display_gravity = nullptr;
     QSerialPort *m_serial = nullptr;
     QVector<quint8> *m_data = nullptr;
+    Sequencer *m_sequencer = nullptr;
+    QMediaPlayer *m_player = nullptr;
+
     QVector <QVector <double> > m_data_left;
     QVector <QVector <double> > m_data_right;
     QVector <QVector <double> > m_data_bin_left;
     QVector <QVector <double> > m_data_bin_right;
     QVector <QVector <double> > m_data_filter_left;
     QVector <QVector <double> > m_data_filter_right;
+    QVector <QVector <double> > m_data_left_mean;
+    QVector <QVector <double> > m_data_right_mean;
     QString dataDisplay;
     QString dataDisplay_pointure;
     QString dataDisplay_gravity;
@@ -186,17 +199,18 @@ private:
     QVector <QLine> m_linesGravity;
     QVector <double> m_pointure;
 
-
     int m_count;
     bool filling;
     bool gravity;
     bool size;
-    static const int LGN_NBR = 48;
+    bool m_presence = false;
+    static const int LGN_NBR = 96;
     static const int COL_NBR = 16;
     static const unsigned int START_MARKER = 0xFFFE;
     static const unsigned int STOP_MARKER = 0xFFFF;
     static const int TOTAL_PIXELS_PER_SIDE = 768;
     int noiseMargin;
+    int m_count_measure = 0;
 
 };
 

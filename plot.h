@@ -54,7 +54,7 @@ private:
     QVector <QVector <double> >* m_matrix_data;
     QVector <QVector <double> >* m_matrix_data_noise;
 
-    const int LGN_NBR = 48;
+    const int LGN_NBR = 96;
     const int COL_NBR = 16;
 
 };
