@@ -272,7 +272,7 @@ Plot::Plot( QWidget *parent ):
     d_alpha(255),
     d_mode(0),
     d_noise_cancel(0),
-    d_noise_margin(100)
+    d_noise_margin(20)
 {
     d_spectrogram = new QwtPlotSpectrogram();
     d_spectrogram->setRenderThreadCount( 0 ); // use system specific thread count

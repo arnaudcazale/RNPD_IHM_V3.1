@@ -12,7 +12,7 @@ Sequencer::~Sequencer()
 
 void Sequencer::update()
 {
-    switch(m_seq_state)
+    /*switch(m_seq_state)
     {
         case SEQ_T1:
             m_seq_state = SEQ_T2;
@@ -29,7 +29,7 @@ void Sequencer::update()
         default: m_seq_state = SEQ_T1;
             break;
     }
-    qDebug() << m_seq_state;
+    qDebug() << m_seq_state;*/
 }
 
 t_seq_state Sequencer::getStep()
@@ -37,21 +37,16 @@ t_seq_state Sequencer::getStep()
     return m_seq_state;
 }
 
-t_seq_state Sequencer::STEP_T1()
+void Sequencer::RUN_SINGLE()
 {
-    QString command = "R";
+    QString command = "S";
     emit getData(command.toLocal8Bit());
-    return SEQ_T2;
 }
 
-t_seq_state Sequencer::STEP_T2()
+void Sequencer::RUN_MULTI()
 {
-    qDebug() << m_seq_state;
-    return SEQ_T3;
+    QString command = "M";
+    emit getData(command.toLocal8Bit());
 }
 
-t_seq_state Sequencer::STEP_T3()
-{
-    qDebug() << m_seq_state;
-    return SEQ_T1;
-}
+

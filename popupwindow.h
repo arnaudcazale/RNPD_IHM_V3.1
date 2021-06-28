@@ -40,7 +40,7 @@ public slots:
 private:
     Plot *d_plot_left;
     Plot *d_plot_right;
-    int d_noiseMargin;
+    int d_noiseMargin = 20;
 };
 
 #endif // POPUPWINDOW_H

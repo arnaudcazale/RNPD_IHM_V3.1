@@ -17,7 +17,7 @@ PopupWindow::PopupWindow(QWidget *parent) :
 {
     d_plot_left = new Plot( this );
     d_plot_right = new Plot( this );
-    d_noiseMargin = 100;
+    d_noiseMargin = 10;
 
     QGridLayout *glayout = new QGridLayout();
     glayout->addWidget(d_plot_left, 0,0,1,1);
@@ -93,9 +93,9 @@ PopupWindow::PopupWindow(QWidget *parent) :
 
     QLabel *integerLabel = new QLabel(tr("noise margin"));
        QSpinBox *integerSpinBox = new QSpinBox;
-       integerSpinBox->setRange(50, 500);
-       integerSpinBox->setSingleStep(50);
-       integerSpinBox->setValue(100);
+       integerSpinBox->setRange(0, 50);
+       integerSpinBox->setSingleStep(10);
+       integerSpinBox->setValue(20);
         toolBar->addWidget( integerSpinBox );
     toolBar->addWidget( integerLabel );
         connect( integerSpinBox, SIGNAL( valueChanged( int ) ),

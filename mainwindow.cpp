@@ -62,9 +62,11 @@
 #include <QtDebug>
 #include <QDesktopWidget>
 #include <QStyle>
+#include <QTimer>
 
 #include "math.h"
 #include <QtEndian>
+#include <windows.h>
 
 
 //! [0]
@@ -106,8 +108,14 @@ MainWindow::MainWindow(QWidget *parent) :
         m_data_bin_right.append(foo);
         m_data_filter_left.append(foo);
         m_data_filter_right.append(foo);
-        m_data_left_mean.append(foo);
-        m_data_right_mean.append(foo);
+        m_data_left_heel.append(foo);
+        m_data_right_heel.append(foo);
+        m_data_left_toe.append(foo);
+        m_data_right_toe.append(foo);
+        m_data_left_full.append(foo);
+        m_data_right_full.append(foo);
+        m_data_left_buff.append(foo);
+        m_data_right_buff.append(foo);
     }
 
     m_ui->setupUi(this);
@@ -167,6 +175,9 @@ MainWindow::MainWindow(QWidget *parent) :
     videoWidget->resize(900, 800);
     videoWidget->show();
     m_player->play();
+
+    //Start sequencer
+    m_sequencer->RUN_SINGLE();
 }
 //! [3]
 
@@ -252,23 +263,40 @@ void MainWindow::readData()
              {
                  filling = false;
                  //Detection if someone is present on the runpad
-                 if(int mean = getRNPDMean(m_data, m_data->size()) > 10 )
+                 if(int mean = getRNPDMean(m_data, m_data->size()) >= 1 )
                  {
-                    //m_presence = true;
                     if(m_player->state() == QMediaPlayer::PlayingState){
                         m_player->stop();
                     }
-                    qDebug() << m_presence;
-                    getMeasure();
+                    //qDebug() << m_presence;
+                    if(m_presence)
+                    {
+                        if(m_count_measure == 0)
+                        {
+                            qDebug() << "RESTEZ STABLE";
+                            msleep(5000);
+                        }else {
+                            qDebug() << "LEVEZ LES TALONS";
+                            msleep(5000);
+                        }
+                        getMeasure();
+                    }
+                    m_presence = true;
+                    m_sequencer->RUN_MULTI();
+
                  }else
                  {
-                    //m_presence = false;
+                    m_presence = false;
                     if(m_player->state() == QMediaPlayer::StoppedState){
                         m_player->play();
                     }
+                    m_sequencer->RUN_SINGLE();
+                    //Reset counting if measure not finished and presence is false
+                    //m_count_measure = 0;
                  }
 
                  m_data->clear();
+
              }
          }else
          {
@@ -305,29 +333,37 @@ void MainWindow::getMeasure()
     emit dataReady_left(&m_data_left);
     emit dataReady_right(&m_data_right);
 
-    m_count_measure++;
-    accumulate(&m_data_left, &m_data_right);
-    //qDebug() << m_data_left_mean;
+    qDebug() << "m_count_measure" << m_count_measure;
+    //accumulate(&m_data_left, &m_data_right);
 
-    if(m_count_measure == 5)
+    if(m_count_measure == 0)
     {
-        accumulateDoMean(m_count_measure);
+        storeHeelData();
+        //emit dataReadyGravity_left(&m_data_left_heel);
+        //emit dataReadyGravity_right(&m_data_right_heel);
         pronationGet();
+        m_count_measure++;
+    }else if(m_count_measure == 1){
+        storeToeData();
+        //double size = sizeGet();
+        //qDebug() << size;
         resetAccumulateVector();
         m_count_measure = 0;
+        //Display graph
+        emit dataReadyGravity_left(&m_data_left_full);
+        emit dataReadyGravity_right(&m_data_right_full);
+        qDebug() << "RESULTATS";
+        msleep(5000);
+
     }
 }
-
-void MainWindow::accumulateDoMean(int nbr)
+void MainWindow::msleep(int msec)
 {
-    for( int i = 0; i < LGN_NBR; i++)
-    {
-        for( int j = 0; j < COL_NBR; j++)
-        {
-           m_data_left_mean[i][j]  /= nbr;
-           m_data_right_mean[i][j] /= nbr;
-        }
-    }
+    QEventLoop loop;
+
+    QTimer::singleShot(msec, &loop, &QEventLoop::quit);
+
+    loop.exec();
 }
 
 void MainWindow::accumulate(QVector <QVector <double> > *matrix_left, QVector <QVector <double> > *matrix_right)
@@ -336,8 +372,34 @@ void MainWindow::accumulate(QVector <QVector <double> > *matrix_left, QVector <Q
     {
         for( int j = 0; j < COL_NBR; j++)
         {
-           m_data_left_mean[i][j]  += matrix_left->at(i).at(j);
-           m_data_right_mean[i][j] += matrix_right->at(i).at(j);
+           m_data_left_buff[i][j]  += matrix_left->at(i).at(j);
+           m_data_right_buff[i][j] += matrix_right->at(i).at(j);
+        }
+    }
+}
+
+void MainWindow::storeHeelData()
+{
+    for( int i = 0; i < LGN_NBR; i++)
+    {
+        for( int j = 0; j < COL_NBR; j++)
+        {
+           m_data_left_heel[i][j]  = m_data_left[i][j];
+           m_data_right_heel[i][j] = m_data_right[i][j];
+        }
+    }
+}
+
+void MainWindow::storeToeData()
+{
+    for( int i = 0; i < LGN_NBR; i++)
+    {
+        for( int j = 0; j < COL_NBR; j++)
+        {
+           m_data_left_toe[i][j]   = m_data_left[i][j];
+           m_data_right_toe[i][j]  = m_data_right[i][j];
+           m_data_left_full[i][j]  = (m_data_left_heel[i][j] + m_data_left_toe[i][j])/2;
+           m_data_right_full[i][j] = (m_data_right_heel[i][j] + m_data_right_toe[i][j])/2;
         }
     }
 }
@@ -348,8 +410,8 @@ void MainWindow::resetAccumulateVector()
     {
         for( int j = 0; j < COL_NBR; j++)
         {
-           m_data_left_mean[i][j]  = 0;
-           m_data_right_mean[i][j] = 0;
+           m_data_left_buff[i][j]  = 0;
+           m_data_right_buff[i][j] = 0;
         }
     }
 }
@@ -366,14 +428,14 @@ int MainWindow::getRNPDMean(QVector <unsigned char> *data, int size){
 void MainWindow::pronationGet(){
 
     //Binarize matrix
-    binarizeFromMean(&m_data_left_mean, &m_data_bin_left);
-    binarizeFromMean(&m_data_right_mean, &m_data_bin_right);
+    binarizeFromMean(&m_data_left_heel, &m_data_bin_left);
+    binarizeFromMean(&m_data_right_heel, &m_data_bin_right);
     //binarizeFromNoiseMargin(&m_data_left, &m_data_bin_left);
     //binarizeFromNoiseMargin(&m_data_right, &m_data_bin_right);
 
     //Filter matrix
-    filterMatrix(&m_data_left_mean, &m_data_bin_left, &m_data_filter_left);
-    filterMatrix(&m_data_right_mean, &m_data_bin_right, &m_data_filter_right);
+    filterMatrix(&m_data_left_heel, &m_data_bin_left, &m_data_filter_left);
+    filterMatrix(&m_data_right_heel, &m_data_bin_right, &m_data_filter_right);
 
     //Display graph
     emit dataReadyGravity_left(&m_data_filter_left);
@@ -601,7 +663,7 @@ void MainWindow::computeSize(){
     emit dataReady_left(&m_data_left);
     emit dataReady_right(&m_data_right);
 
-    double size = calc_size();
+    double size = sizeGet();
     m_pointure.append(size);
 
     if( (m_count % 2) == 0)
@@ -1614,8 +1676,9 @@ unsigned int MainWindow::calc_mean(QVector <QVector <double> > *matrix)
     return mean;
 }
 
-double MainWindow::calc_size()
+double MainWindow::sizeGet()
 {
+    qDebug() << "*************************sizeGet********************************";
     int hi = 0, low = 0;
     unsigned int xa, xb, ya, yb, xc, yc, xd, yd;
     double  a1 = 0;
@@ -1624,12 +1687,13 @@ double MainWindow::calc_size()
     double left_size, right_size;
     double offset = 5;
 
+    qDebug() << "*************************leftFoot********************************";
     //LEFT FOOT
-    binarizeFromNoiseMargin(&m_data_left, &m_data_bin_left);
+    binarizeFromNoiseMargin(&m_data_left_full, &m_data_bin_left);
     //get_coor_extr_left_for_left_foot(&m_data_bin_left, &xa, &ya, &xb, &yb);
     //get_coor_extr_right_for_left_foot(&m_data_bin_left, &xc, &yc, &xd, &yd);
     get_extr_axial_left(&m_data_bin_left, &xa, &ya, &xb, &yb);
-    get_hilo_pos(&m_data_left, &hi, &low);
+    get_hilo_pos(&m_data_left_full, &hi, &low);
 
     /*xa *= xy_ratio;
     xb *= xy_ratio;
@@ -1644,7 +1708,7 @@ double MainWindow::calc_size()
     if ( abs(a1*(180/M_PI)) > 25) a1 = 0; //detection problem
 
     left_angle =  (M_PI/2) - a1;
-    left_size = ( (hi - low) / sin( left_angle)) + offset;
+    left_size = ( (hi - low) / 2*sin( left_angle)) + offset;
 
     qDebug() << "left_angle" << left_angle*(180/M_PI);
     qDebug() << "left_size" << left_size;
@@ -1652,12 +1716,13 @@ double MainWindow::calc_size()
     dataDisplay.append("LEFT ANGLE = " + QString::number(left_angle*(180/M_PI)) + "\n");
     dataDisplay.append("LEFT SIZE = " + QString::number(left_size) + "\n");
 
+    qDebug() << "*************************rightFoot********************************";
     //RIGHT FOOT
-    binarizeFromNoiseMargin(&m_data_right, &m_data_bin_right);
+    binarizeFromNoiseMargin(&m_data_right_full, &m_data_bin_right);
     //get_coor_extr_left_for_right_foot(&m_data_bin_right, &xa, &ya, &xb, &yb);
     //get_coor_extr_right_for_right_foot(&m_data_bin_right, &xc, &yc, &xd, &yd);
     get_extr_axial_right(&m_data_bin_right, &xa, &ya, &xb, &yb);
-    get_hilo_pos(&m_data_right, &hi, &low);
+    get_hilo_pos(&m_data_right_full, &hi, &low);
 
     /*xa *= xy_ratio;
     xb *= xy_ratio;
@@ -1672,7 +1737,7 @@ double MainWindow::calc_size()
     if ( abs(a1*(180/M_PI)) > 25) a1 = 0; //detection problem
 
     right_angle = (M_PI/2)-a1;
-    right_size = ( (hi - low) / sin(right_angle)) + offset;
+    right_size = ( (hi - low) / 2*sin(right_angle)) + offset;
 
     qDebug() << "right_angle" << right_angle*(180/M_PI);
     qDebug() << "right_size" << right_size;

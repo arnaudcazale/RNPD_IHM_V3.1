@@ -27,11 +27,8 @@ class Sequencer: public QObject
 
         t_seq_state getStep();
         void update();
-        t_seq_state STEP_T1();
-        t_seq_state STEP_T2();
-        t_seq_state STEP_T3();
-
-
+        void RUN_SINGLE();
+        void RUN_MULTI();
 
     private:
         t_seq_state m_seq_state;

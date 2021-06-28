@@ -132,7 +132,7 @@ private:
     void binarizeFromMean(QVector <QVector <double> > *matrix, QVector <QVector <double> > *matrix_bin);
     unsigned int get_median_line(QVector <QVector <double> > *matrix_bin);
     unsigned int calc_mean(QVector <QVector <double> > *matrix);
-    double calc_size(void);
+    double sizeGet(void);
     int calc_gravity(void);
     void get_hilo_pos(QVector <QVector <double> > *matrix, int *hi, int *low);
     void get_coor_extr_left_for_left_foot(QVector <QVector <double> > *matrix_bin, unsigned int *xa, unsigned int *ya, unsigned int *xb, unsigned int *yb);
@@ -164,8 +164,10 @@ private:
     int getRNPDMean(QVector <unsigned char> *, int);
     void getMeasure(void);
     void accumulate(QVector <QVector <double> > *, QVector <QVector <double> > *);
-    void accumulateDoMean(int);
+    void storeHeelData(void);
+    void storeToeData(void);
     void resetAccumulateVector();
+    void msleep(int msec);
 
 private:
     void showStatusMessage(const QString &message);
@@ -190,8 +192,15 @@ private:
     QVector <QVector <double> > m_data_bin_right;
     QVector <QVector <double> > m_data_filter_left;
     QVector <QVector <double> > m_data_filter_right;
-    QVector <QVector <double> > m_data_left_mean;
-    QVector <QVector <double> > m_data_right_mean;
+    QVector <QVector <double> > m_data_left_heel;
+    QVector <QVector <double> > m_data_right_heel;
+    QVector <QVector <double> > m_data_left_toe;
+    QVector <QVector <double> > m_data_right_toe;
+    QVector <QVector <double> > m_data_left_full;
+    QVector <QVector <double> > m_data_right_full;
+    QVector <QVector <double> > m_data_left_buff;
+    QVector <QVector <double> > m_data_right_buff;
+
     QString dataDisplay;
     QString dataDisplay_pointure;
     QString dataDisplay_gravity;
@@ -209,8 +218,9 @@ private:
     static const unsigned int START_MARKER = 0xFFFE;
     static const unsigned int STOP_MARKER = 0xFFFF;
     static const int TOTAL_PIXELS_PER_SIDE = 768;
-    int noiseMargin;
+    int noiseMargin = 10;
     int m_count_measure = 0;
+    bool m_wait_data = false;
 
 };
 
