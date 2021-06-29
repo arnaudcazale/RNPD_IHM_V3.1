@@ -117,6 +117,7 @@ PopupWindow::~PopupWindow()
 void PopupWindow::dataUpdate_left(QVector<QVector <double> > *dataPacket)
 {
     d_plot_left->setMatrixData(dataPacket);
+    qDebug() << "dataUpdate_left";
 }
 
 void PopupWindow::dataUpdate_right(QVector<QVector <double> > *dataPacket)

@@ -268,31 +268,53 @@ void MainWindow::readData()
                     if(m_player->state() == QMediaPlayer::PlayingState){
                         m_player->stop();
                     }
-                    //qDebug() << m_presence;
-                    if(m_presence)
+
+                    m_count_measure++;
+                    qDebug() << "m_count_measure" << m_count_measure;
+
+                    if( m_count_measure == 1 )
                     {
-                        if(m_count_measure == 0)
-                        {
-                            qDebug() << "RESTEZ STABLE";
-                            msleep(5000);
-                        }else {
-                            qDebug() << "LEVEZ LES TALONS";
-                            msleep(5000);
-                        }
+                        qDebug() << "RESTEZ STABLE";
+                        msleep(3000);
+                    }else if(m_count_measure == 2){
                         getMeasure();
+                        //qDebug() << "getMeasure";
+                    }else if(m_count_measure == 3){
+                        qDebug() << "LEVEZ LES TALONS";
+                        msleep(3000);
+                    }else if(m_count_measure == 4){
+                        getMeasure();
+                        m_count_measure = 0;
+                        //qDebug() << "getMeasure";
                     }
-                    m_presence = true;
+
                     m_sequencer->RUN_MULTI();
+
+                    /*if(m_presence)getMeasure();
+
+                    if( !m_presence )
+                    {
+                        qDebug() << "RESTEZ STABLE";
+                        Sleep(3000);
+                    }else if(m_count_measure == 1){
+                        qDebug() << "LEVEZ LES TALONS";
+                        Sleep(3000);
+                    }
+
+                    m_sequencer->RUN_MULTI();
+                    m_presence = true;*/
+
+
 
                  }else
                  {
-                    m_presence = false;
+                    //m_presence = false;
                     if(m_player->state() == QMediaPlayer::StoppedState){
                         m_player->play();
                     }
                     m_sequencer->RUN_SINGLE();
                     //Reset counting if measure not finished and presence is false
-                    //m_count_measure = 0;
+                    m_count_measure = 0;
                  }
 
                  m_data->clear();
@@ -333,17 +355,14 @@ void MainWindow::getMeasure()
     emit dataReady_left(&m_data_left);
     emit dataReady_right(&m_data_right);
 
-    qDebug() << "m_count_measure" << m_count_measure;
     //accumulate(&m_data_left, &m_data_right);
 
-    if(m_count_measure == 0)
+    if(m_count_measure == 2)
     {
         storeHeelData();
-        //emit dataReadyGravity_left(&m_data_left_heel);
-        //emit dataReadyGravity_right(&m_data_right_heel);
         pronationGet();
-        m_count_measure++;
-    }else if(m_count_measure == 1){
+        //m_count_measure++;
+    }else if(m_count_measure == 4){
         storeToeData();
         //double size = sizeGet();
         //qDebug() << size;
@@ -354,7 +373,6 @@ void MainWindow::getMeasure()
         emit dataReadyGravity_right(&m_data_right_full);
         qDebug() << "RESULTATS";
         msleep(5000);
-
     }
 }
 void MainWindow::msleep(int msec)
@@ -398,8 +416,8 @@ void MainWindow::storeToeData()
         {
            m_data_left_toe[i][j]   = m_data_left[i][j];
            m_data_right_toe[i][j]  = m_data_right[i][j];
-           m_data_left_full[i][j]  = (m_data_left_heel[i][j] + m_data_left_toe[i][j])/2;
-           m_data_right_full[i][j] = (m_data_right_heel[i][j] + m_data_right_toe[i][j])/2;
+           m_data_left_full[i][j]  = m_data_left_heel[i][j] + m_data_left_toe[i][j];
+           m_data_right_full[i][j] = m_data_right_heel[i][j] + m_data_right_toe[i][j];
         }
     }
 }
