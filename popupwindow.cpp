@@ -1,4 +1,5 @@
 #include "popupwindow.h"
+#include "plot.h"
 #include <QLabel>
 #include <QObject>
 #include <QVBoxLayout>
@@ -17,7 +18,7 @@ PopupWindow::PopupWindow(QWidget *parent) :
 {
     d_plot_left = new Plot( this );
     d_plot_right = new Plot( this );
-    d_noiseMargin = 10;
+    //d_noiseMargin = 10;
 
     QGridLayout *glayout = new QGridLayout();
     glayout->addWidget(d_plot_left, 0,0,1,1);
@@ -117,7 +118,7 @@ PopupWindow::~PopupWindow()
 void PopupWindow::dataUpdate_left(QVector<QVector <double> > *dataPacket)
 {
     d_plot_left->setMatrixData(dataPacket);
-    qDebug() << "dataUpdate_left";
+    //qDebug() << "dataUpdate_left";
 }
 
 void PopupWindow::dataUpdate_right(QVector<QVector <double> > *dataPacket)

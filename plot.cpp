@@ -297,7 +297,11 @@ Plot::Plot( QWidget *parent ):
     rightAxis->setColorBarEnabled( true );
 
     setAxisScale( QwtPlot::yRight, zInterval.minValue(), zInterval.maxValue() );
-    enableAxis( QwtPlot::yRight );
+    //enableAxis( QwtPlot::yRight );
+
+    setAxisScale(yLeft,0, 96);
+    enableAxis(xBottom, false);
+    enableAxis(yLeft, false);
 
     plotLayout()->setAlignCanvasToScales( true );
 
@@ -336,7 +340,6 @@ Plot::Plot( QWidget *parent ):
     //overlay->set_coordonnees(line);
     d_overlay->setZ(8);
     d_overlay->attach(this);
-
 }
 
 void Plot::changeAlgo( bool on )
@@ -576,6 +579,10 @@ int Plot::getNoiseMargin(void)
     return d_noise_margin;
 }
 
+void Plot::detachOverlay( void )
+{
+    d_overlay->detach();
+}
 
 
 

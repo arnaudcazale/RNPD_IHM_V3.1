@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QPlainTextEdit>
-#include "plot.h"
+
 #include <QMainWindow>
 #include <QPaintEvent>
 
@@ -12,6 +12,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui {
 class PopupWindow;
 }
+
+class Plot;
 
 QT_END_NAMESPACE
 

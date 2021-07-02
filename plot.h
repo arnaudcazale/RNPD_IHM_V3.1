@@ -33,6 +33,7 @@ public Q_SLOTS:
     void drawPoint(QPoint);
     void drawZone(QVector <QRect> zones);
     void updateNoiseMargin(int noiseMargin);
+    void detachOverlay(void);
 
 public:
 

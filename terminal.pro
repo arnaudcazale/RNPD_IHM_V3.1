@@ -18,6 +18,7 @@ SOURCES += \
     mainwindow.cpp \
     plot.cpp \
     popupwindow.cpp \
+    resultwindow.cpp \
     sequencer.cpp \
     settingsdialog.cpp \
     console.cpp
@@ -27,6 +28,7 @@ HEADERS += \
     mainwindow.h \
     plot.h \
     popupwindow.h \
+    resultwindow.h \
     sequencer.h \
     settingsdialog.h \
     console.h

@@ -74,6 +74,7 @@ class SettingsDialog;
 class PopupWindow;
 class DisplayWindow;
 class Sequencer;
+class ResultWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -185,6 +186,8 @@ private:
     QVector<quint8> *m_data = nullptr;
     Sequencer *m_sequencer = nullptr;
     QMediaPlayer *m_player = nullptr;
+    QVideoWidget *m_videoWidget = nullptr;
+    ResultWindow *m_resultWindow = nullptr;
 
     QVector <QVector <double> > m_data_left;
     QVector <QVector <double> > m_data_right;
@@ -221,6 +224,13 @@ private:
     int noiseMargin = 10;
     int m_count_measure = 0;
     bool m_wait_data = false;
+
+    double m_left_angle;
+    double m_right_angle;
+
+    QString m_pronation;
+    double m_drop;
+    double m_size;
 
 };
 
