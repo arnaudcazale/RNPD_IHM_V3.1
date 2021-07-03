@@ -61,10 +61,10 @@ ResultWindow::~ResultWindow()
 void ResultWindow::display(double deviationMean, double drop, double size, int step)
 {
     m_text->clear();
-    qDebug() << "step" << step;
+    /*qDebug() << "step" << step;
     qDebug() << "deviationMean" << deviationMean;
     qDebug() << "drop" << drop;
-    qDebug() << "size" << size;
+    qDebug() << "size" << size;*/
 
     switch (step)
     {
@@ -126,7 +126,7 @@ void ResultWindow::display(double deviationMean, double drop, double size, int s
 
             //Display size
             m_text->append( QString("SIZE: ") +
-                            QString::number(size) +
+                            QString::number(size, 'f', 1) +
                             QString("\n"));
 
         break;
