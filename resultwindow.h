@@ -24,7 +24,7 @@ class ResultWindow : public QMainWindow
         explicit ResultWindow(QWidget *parent = nullptr);
         ~ResultWindow();
 
-        void display(QString text);
+        void display(double deviationMean, double drop, double size, int step);
 
     protected:
 

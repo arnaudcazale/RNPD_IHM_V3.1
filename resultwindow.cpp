@@ -37,14 +37,13 @@ ResultWindow::ResultWindow(QWidget *parent) :
     hlayout->addWidget(d_plot_right);
 
     //Set Font
-    QFont font("Times", 20, QFont::Bold);
+    QFont font("Times", 40, QFont::Bold);
     m_text->setFont(font);
     //text->setTextColor(Qt::darkCyan); //BlueELectric = #7DF9FF
     QColor newColor = QColor::fromRgb(125, 249, 255, 255);
     m_text->setTextColor(newColor);
     m_text->viewport()->setAutoFillBackground(false);
     //text->append("TEST POLICE");
-    m_text->setAlignment(Qt::AlignCenter);
     m_text->setFrameStyle(QFrame::NoFrame);
 
     // Set layout in QWidget
@@ -59,9 +58,83 @@ ResultWindow::~ResultWindow()
 
 }
 
-void ResultWindow::display(QString text)
+void ResultWindow::display(double deviationMean, double drop, double size, int step)
 {
-    m_text->setText(text);
+    m_text->clear();
+    qDebug() << "step" << step;
+    qDebug() << "deviationMean" << deviationMean;
+    qDebug() << "drop" << drop;
+    qDebug() << "size" << size;
+
+    switch (step)
+    {
+        case 1:
+            m_text->append( QString("\n") +
+                            QString("\n") +
+                            QString("\n") +
+                            QString("\n") +
+                            QString("STABILISEZ"));
+        break;
+
+        case 3:
+            m_text->append( QString("\n") +
+                            QString("\n") +
+                            QString("\n") +
+                            QString("\n") +
+                            QString("LEVEZ LES TALONS"));
+        break;
+
+        case 4:
+            m_text->append( QString("\n") +
+                            QString("\n") +
+                            QString("\n") +
+                            QString("\n") );
+            m_text->setAlignment(Qt::AlignCenter);
+
+            //Display pronation
+            if( deviationMean < -3){
+                m_text->append( QString("SUPINAL\n") );
+                m_text->setAlignment(Qt::AlignCenter);
+            }
+            else if( deviationMean > 3){
+                m_text->append( QString("CONTROL\n") );
+                m_text->setAlignment(Qt::AlignCenter);
+            }
+            else if( (deviationMean >=-3) && (deviationMean <=-1.5) ){
+                m_text->append( QString("NEUTRE\n")   +
+                                QString("TENDANCE\n") +
+                                QString("SUPINAL\n") );
+                m_text->setAlignment(Qt::AlignCenter);
+            }
+            else if( (deviationMean >=1.5) && (deviationMean <=3) ){
+                m_text->append( QString("NEUTRE\n")   +
+                                QString("TENDANCE\n") +
+                                QString("CONTROL\n") );
+                m_text->setAlignment(Qt::AlignCenter);
+            }
+            else{
+                m_text->append( QString("NEUTRE\n") );
+                m_text->setAlignment(Qt::AlignCenter);
+            }
+
+            //Display drop
+            m_text->append( QString("DROP: ") +
+                            QString::number(drop) +
+                            QString("\n"));
+
+            m_text->setAlignment(Qt::AlignCenter);
+
+            //Display size
+            m_text->append( QString("SIZE: ") +
+                            QString::number(size) +
+                            QString("\n"));
+
+        break;
+
+    }
+
+    m_text->setAlignment(Qt::AlignCenter);
+
 }
 
 void ResultWindow::dataUpdate_left(QVector<QVector <double> > *dataPacket)

@@ -110,7 +110,8 @@ public:
         setInterval( Qt::ZAxis, QwtInterval( 0, 254 ) );
 
         for(int i = 0 ; i < sizeMatrix ; i++){
-            matrix[i] = (double) ((double)254/sizeMatrix) * i;
+            //matrix[i] = (double) ((double)254/sizeMatrix) * i;
+            matrix[i] = 0;
         }
 
         QVector<double> values;

@@ -169,6 +169,7 @@ private:
     void storeToeData(void);
     void resetAccumulateVector();
     void msleep(int msec);
+    void resetMatrix(QVector <QVector <double> > *);
 
 private:
     void showStatusMessage(const QString &message);
@@ -228,7 +229,7 @@ private:
     double m_left_angle;
     double m_right_angle;
 
-    QString m_pronation;
+    double m_deviationMean;
     double m_drop;
     double m_size;
 

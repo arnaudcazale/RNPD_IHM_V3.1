@@ -124,8 +124,10 @@ MainWindow::MainWindow(QWidget *parent) :
     m_ui->setupUi(this);
     m_console->setEnabled(false);
     m_popupwindow->resize(900, 800);
+    m_popupwindow->setWindowFlags(Qt::WindowStaysOnTopHint);
     m_popupwindow->show();
     m_popupwindowGravity->resize(900, 800);
+    m_popupwindowGravity->setWindowFlags(Qt::WindowStaysOnTopHint);
     m_popupwindowGravity->show();
     //m_display->show();
     m_display->resize(500, 250);
@@ -290,26 +292,31 @@ void MainWindow::readData()
 
                     if( m_count_measure == 1 )
                     {
+                        //reset previously foot image
+                        resetMatrix(&m_data_filter_left);
+                        resetMatrix(&m_data_filter_right);
+                        emit dataReadyGravity_left(&m_data_filter_left);
+                        emit dataReadyGravity_right(&m_data_filter_right);
+
                         m_resultWindow->showMaximized();
-                        m_resultWindow->display("RESTEZ STABLE");
+                        m_resultWindow->display(0,0,0,m_count_measure);
                         msleep(3000);
                         m_sequencer->RUN_MULTI();
+
                     }else if(m_count_measure == 2){
                         getMeasure();
                         m_sequencer->RUN_SINGLE();
+
                     }else if(m_count_measure == 3){
-                        m_resultWindow->display("LEVEZ LES TALONS");
+                        m_resultWindow->display(0,0,0,m_count_measure);
                         msleep(3000);
                         m_sequencer->RUN_MULTI();
+
                     }else if(m_count_measure == 4){
                         getMeasure();
+                        m_resultWindow->display(m_deviationMean, m_drop, m_size, m_count_measure);
                         m_count_measure = 0;
-                        QString string = QString("RESULTAS\r\n") +
-                                            QString("PRONATION: ") + QString(m_pronation + "\r\n") +
-                                            QString("GRAVITY: ") + QString::number(m_drop) + QString("\r\n") +
-                                            QString("SIZE: ") + QString::number(m_size) + QString("\r\n");
-                        m_resultWindow->display(string);
-                        msleep(5000);
+                        msleep(8000);
                         m_sequencer->RUN_SINGLE();
                     }
                  }else
@@ -378,10 +385,25 @@ void MainWindow::getMeasure()
         m_size = sizeGet();
         //qDebug() << size;
         resetAccumulateVector();
-        m_count_measure = 0;
+        //m_count_measure = 0;
         //Display graph
         //emit dataReadyGravity_left(&m_data_left_full);
         //emit dataReadyGravity_right(&m_data_right_full);
+    }
+}
+
+void MainWindow::resetMatrix(QVector <QVector <double> > *matrix)
+{
+    matrix->clear();
+
+    for(int i = 0; i < LGN_NBR; i++)
+    {
+        QVector<double> foo;
+        for(int j = 0; j < COL_NBR; j++)
+        {
+            foo.append(0);
+        }
+        matrix->append(foo);
     }
 }
 
@@ -486,8 +508,8 @@ void MainWindow::pronationGet(){
     QLine neutralLineRight = neutralLineGet(&m_data_bin_right, zonesRight);
     double deviationRight = deviationGet(neutralLineRight, barycentreRight, false);
 
-    double deviationMean = ( deviationLeft + deviationRight ) / 2;
-    m_pronation = pronationDisplay(deviationMean);
+    m_deviationMean = ( deviationLeft + deviationRight ) / 2;
+    //m_pronation = pronationDisplay(deviationMean);
     //qDebug() << "Pronation type " << pronation;
 
     //Emit signals for displaying graphic items
@@ -1771,7 +1793,7 @@ double MainWindow::sizeGet()
 
     //left_angle =  (M_PI/2) - a1;
     qDebug() << "left_angle" << m_left_angle*(180/M_PI);
-    left_size = (hi - low)/2;
+    left_size = (double(hi) - double(low))/2;
     qDebug() << "left_size" << left_size;
     left_size = left_size / sin(m_left_angle);
     qDebug() << "left_size_angle" << left_size;
@@ -1802,7 +1824,7 @@ double MainWindow::sizeGet()
 
     right_angle = (M_PI/2)-a1;*/
     qDebug() << "right_angle" << m_right_angle*(180/M_PI);
-    right_size = (hi - low)/2;
+    right_size = (double(hi) - double(low))/2;
     qDebug() << "right_size" << right_size;
     right_size = right_size / sin(m_right_angle);
     qDebug() << "right_size_angle" << right_size;
@@ -2470,8 +2492,9 @@ int MainWindow::gvtGet(QVector <QVector <double> > *matrix_filter, point_t *A, p
 
 void MainWindow::get_hilo_pos(QVector <QVector <double> > *matrix, int *hi, int *low)
 {
-    int noiseMargin = m_popupwindow->getNoiseMargin();
-    qDebug() << noiseMargin;
+    //int noiseMargin = m_popupwindow->getNoiseMargin();
+    //qDebug() << noiseMargin;
+    noiseMargin = 0;
     bool found = false;
     /* find low position */
     for( int i = 0; i < LGN_NBR; i++)
