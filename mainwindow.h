@@ -75,6 +75,7 @@ class PopupWindow;
 class DisplayWindow;
 class Sequencer;
 class ResultWindow;
+class QRoundProgressBar;
 
 class MainWindow : public QMainWindow
 {
@@ -107,6 +108,8 @@ public:
 signals:
     void dataReady_left(QVector<QVector <double> > *);
     void dataReady_right(QVector <QVector <double> > *);
+    void dataReadyResults_left(QVector <QVector <double> > *);
+    void dataReadyResults_right(QVector <QVector <double> > *);
     void dataReadyGravity_line(QVector <QLine> );
     void dataReady_point(QPoint, QPoint);
     void dataReady_line(QLine, QLine );

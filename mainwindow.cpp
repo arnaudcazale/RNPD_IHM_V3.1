@@ -164,11 +164,16 @@ MainWindow::MainWindow(QWidget *parent) :
 //! [3]
     connect(this, SIGNAL(dataReady_left(QVector<QVector <double> > *)), m_popupwindow, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
     connect(this, SIGNAL(dataReady_right(QVector<QVector <double> > *)), m_popupwindow, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
+    connect(this, SIGNAL(dataReady_left(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
+    connect(this, SIGNAL(dataReady_right(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
+    connect(this, SIGNAL(dataReadyResults_left(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
+    connect(this, SIGNAL(dataReadyResults_right(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
+
     //connect(this, SIGNAL(dataReady_line(QVector <QLine>)), m_popupwindow, SLOT(drawLine(QVector <QLine>)));
     connect(this, SIGNAL(dataReadyGravity_left(QVector<QVector <double> > *)), m_popupwindowGravity, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
     connect(this, SIGNAL(dataReadyGravity_right(QVector<QVector <double> > *)), m_popupwindowGravity, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
-    connect(this, SIGNAL(dataReadyGravity_left(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
-    connect(this, SIGNAL(dataReadyGravity_right(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
+    //connect(this, SIGNAL(dataReadyGravity_left(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_left(QVector<QVector <double> > *)));
+    //connect(this, SIGNAL(dataReadyGravity_right(QVector<QVector <double> > *)), m_resultWindow, SLOT(dataUpdate_right(QVector<QVector <double> > *)));
     //connect(this, SIGNAL(dataReadyGravity_line(QVector <QLine>)), m_popupwindowGravity, SLOT(drawLine(QVector <QLine>)));
     connect(this, SIGNAL(dataReady_point(QPoint, QPoint)), m_popupwindowGravity, SLOT(drawPoint(QPoint, QPoint)));
     connect(this, SIGNAL(dataReady_zone(QVector <QRect>, QVector <QRect>)), m_popupwindowGravity, SLOT(drawZone(QVector <QRect>, QVector <QRect>)));
@@ -179,13 +184,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //Set video widget
     m_player->setMedia(QUrl("file:///C:/Users/arnau/Desktop/SMARTRONICS/RUNPAD/V3/IHM/V3.1/invitation.mp4"));
+
     m_player->setVideoOutput(m_videoWidget);
     m_videoWidget->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
     m_videoWidget->resize(900, 800);
     m_videoWidget->showMaximized();
     m_player->play();
-
-    //m_resultWindow->showMaximized();
 
     //Start sequencer
     m_sequencer->RUN_SINGLE();
@@ -280,17 +284,14 @@ void MainWindow::readData()
                  //qDebug() << *m_data;
                  filling = false;
                  //Detection if someone is present on the runpad
-                 if(int mean = getRNPDMean(m_data, m_data->size()) >= 5 )
+                 if(int mean = getRNPDMean(m_data, m_data->size()) >= 3 )
                  {
                     //m_videoWidget->hide();
                     if(m_player->state() == QMediaPlayer::PlayingState){
                         m_player->stop();
                     }
 
-                    m_count_measure++;
-                    qDebug() << "m_count_measure" << m_count_measure;
-
-                    if( m_count_measure == 1 )
+                    /*if( m_count_measure == 1 )
                     {
                         //reset previously foot image
                         resetMatrix(&m_data_filter_left);
@@ -318,7 +319,46 @@ void MainWindow::readData()
                         m_count_measure = 0;
                         msleep(8000);
                         m_sequencer->RUN_SINGLE();
+                    }*/
+
+                    m_count_measure++;
+                    qDebug() << "m_count_measure" << m_count_measure;
+
+                    if( m_count_measure == 1 )
+                    {
+                        //reset previously foot image
+                        resetMatrix(&m_data_filter_left);
+                        resetMatrix(&m_data_filter_right);
+                        emit dataReadyGravity_left(&m_data_filter_left);
+                        emit dataReadyGravity_right(&m_data_filter_right);
+                        emit dataReadyResults_left(&m_data_filter_left);
+                        emit dataReadyResults_right(&m_data_filter_right);
+
+                        m_resultWindow->showMaximized();
+                        m_resultWindow->display(0,0,0,m_count_measure);
+                        msleep(3000);
+                        m_sequencer->RUN_SINGLE();
+                    }else if(m_count_measure < 6){
+                        m_resultWindow->display(0,0,0,m_count_measure);
+                        getMeasure();
+                        m_sequencer->RUN_SINGLE();
+                    }else if(m_count_measure == 6){
+                        getMeasure();
+                        m_resultWindow->display(0,0,0,m_count_measure);
+                        msleep(3000);
+                        m_sequencer->RUN_SINGLE();
+                    }else if(m_count_measure < 11){
+                        getMeasure();
+                        m_resultWindow->display(0,0,0,m_count_measure);
+                        m_sequencer->RUN_SINGLE();
+                    }else if(m_count_measure == 11){
+                        getMeasure();
+                        m_resultWindow->display(m_deviationMean, m_drop, m_size, m_count_measure);
+                        m_count_measure = 0;
+                        msleep(8000);
+                        m_sequencer->RUN_SINGLE();
                     }
+
                  }else
                  {
                     //m_videoWidget->showMaximized();
@@ -329,6 +369,9 @@ void MainWindow::readData()
                     m_sequencer->RUN_SINGLE();
                     //Reset counting if measure not finished and presence is false
                     m_count_measure = 0;
+                    resetAccumulateVector();
+                    m_resultWindow->display(0, 0, 0, 12);
+
                  }
 
                  //Show spectrogramms (debug purpose)
@@ -372,23 +415,30 @@ void MainWindow::getMeasure()
     fillLeftDataMeanNeightboorhood();
     fillRightDataMeanNeightboorhood();
 
-    //Show spectrogramms (debug purpose)
+    //Show raw data (debug purpose)
     emit dataReady_left(&m_data_left);
     emit dataReady_right(&m_data_right);
 
-    if(m_count_measure == 2)
+    //Show filtered data (result window)
+    binarizeFromMean(&m_data_left, &m_data_bin_left);
+    binarizeFromMean(&m_data_right, &m_data_bin_right);
+    //Filter matrix
+    filterMatrix(&m_data_left, &m_data_bin_left, &m_data_filter_left);
+    filterMatrix(&m_data_right, &m_data_bin_right, &m_data_filter_right);
+    emit dataReadyResults_left(&m_data_filter_left);
+    emit dataReadyResults_right(&m_data_filter_right);
+
+    accumulate(&m_data_left, &m_data_right);
+
+    if(m_count_measure == 6)
     {
         storeHeelData();
         pronationGet();
-    }else if(m_count_measure == 4){
+        resetAccumulateVector();
+    }else if(m_count_measure == 11){
         storeToeData();
         m_size = sizeGet();
-        //qDebug() << size;
         resetAccumulateVector();
-        //m_count_measure = 0;
-        //Display graph
-        //emit dataReadyGravity_left(&m_data_left_full);
-        //emit dataReadyGravity_right(&m_data_right_full);
     }
 }
 
@@ -434,8 +484,8 @@ void MainWindow::storeHeelData()
     {
         for( int j = 0; j < COL_NBR; j++)
         {
-           m_data_left_heel[i][j]  = m_data_left[i][j];
-           m_data_right_heel[i][j] = m_data_right[i][j];
+           m_data_left_heel[i][j]  = m_data_left_buff[i][j]/5;
+           m_data_right_heel[i][j] = m_data_right_buff[i][j]/5;
         }
     }
 }
@@ -446,8 +496,8 @@ void MainWindow::storeToeData()
     {
         for( int j = 0; j < COL_NBR; j++)
         {
-           m_data_left_toe[i][j]   = m_data_left[i][j];
-           m_data_right_toe[i][j]  = m_data_right[i][j];
+           m_data_left_toe[i][j]   = m_data_left_buff[i][j]/5;
+           m_data_right_toe[i][j]  = m_data_right_buff[i][j]/5;
            m_data_left_full[i][j]  = (m_data_left_heel[i][j] + m_data_left_toe[i][j]);
            m_data_right_full[i][j] = (m_data_right_heel[i][j] + m_data_right_toe[i][j]);
         }
@@ -478,18 +528,19 @@ int MainWindow::getRNPDMean(QVector <unsigned char> *data, int size){
 void MainWindow::pronationGet(){
 
     //Binarize matrix
-    binarizeFromMean(&m_data_left_heel, &m_data_bin_left);
-    binarizeFromMean(&m_data_right_heel, &m_data_bin_right);
-    //binarizeFromNoiseMargin(&m_data_left, &m_data_bin_left);
-    //binarizeFromNoiseMargin(&m_data_right, &m_data_bin_right);
+    //binarizeFromMean(&m_data_left_heel, &m_data_bin_left);
+    //binarizeFromMean(&m_data_right_heel, &m_data_bin_right);
 
     //Filter matrix
-    filterMatrix(&m_data_left_heel, &m_data_bin_left, &m_data_filter_left);
-    filterMatrix(&m_data_right_heel, &m_data_bin_right, &m_data_filter_right);
+    //filterMatrix(&m_data_left_heel, &m_data_bin_left, &m_data_filter_left);
+    //filterMatrix(&m_data_right_heel, &m_data_bin_right, &m_data_filter_right);
 
     //Display graph debug
     emit dataReadyGravity_left(&m_data_filter_left);
     emit dataReadyGravity_right(&m_data_filter_right);
+
+    emit dataReadyResults_left(&m_data_filter_left);
+    emit dataReadyResults_right(&m_data_filter_right);
 
     //Find zones
     qDebug() << "**************************LEFT*******************************";
@@ -537,9 +588,9 @@ void MainWindow::pronationGet(){
          qDebug() << "gravity = " << gravity;
          double alpha = 2.0 / 3.0;
          igravity = 0;
-         if( gravity >= alpha)
-             igravity = 0;
-         else
+         //if( gravity >= alpha)
+         //    igravity = 0;
+         //else
              igravity = (uint8_t)(((alpha - gravity) / alpha) * 17);
          qDebug() << "igravity = " << igravity;
      }else
@@ -1771,6 +1822,9 @@ double MainWindow::sizeGet()
 
     emit dataReadyGravity_left(&m_data_filter_left);
     emit dataReadyGravity_right(&m_data_filter_right);
+
+    emit dataReadyResults_left(&m_data_filter_left);
+    emit dataReadyResults_right(&m_data_filter_right);
 
 
     qDebug() << "*************************leftFoot********************************";

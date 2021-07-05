@@ -13,6 +13,7 @@ TARGET = terminal
 TEMPLATE = app
 
 SOURCES += \
+    QRoundProgressBar.cpp \
     displaywindow.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -24,6 +25,7 @@ SOURCES += \
     console.cpp
 
 HEADERS += \
+    QRoundProgressBar.h \
     displaywindow.h \
     mainwindow.h \
     plot.h \

@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QTextEdit>
 #include <QString>
+#include "QRoundProgressBar.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -38,6 +39,7 @@ class ResultWindow : public QMainWindow
         Plot *d_plot_left;
         Plot *d_plot_right;
         QTextEdit *m_text;
+        QRoundProgressBar *m_roundBar = nullptr;
 };
 
 #endif // RESULTWINDOW_H
